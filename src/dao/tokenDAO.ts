@@ -1,31 +1,26 @@
-import { config } from "dotenv";
-import Jwt from "jsonwebtoken";
-import pool from "../config/connection/conexion";
-import { DataToken, Token } from "../interface/interfaces";
-import { SQL_TOKEN } from "../repository/crudSQL";
-import Result from "../utils/Result";
-
-config({ path: "./.env" });
+import Jwt from 'jsonwebtoken';
+import { db } from '../config/connection/conexion';
+import { secretJWT } from '../config/domain/varDB';
+import { DataToken } from '../interface/eschemas';
+import { Token } from '../interface/eschemas';
+import { SQL_TOKEN } from '../repository/crudSQL';
+import Result from '../utils/Result';
 
 export default class tokenDAO {
 	public static async generateToken(data: Token[]): Promise<Result<string>> {
 		try {
-			const result = await pool.result(SQL_TOKEN.FETCH_USER_CREDENTIALS, 
-				data
-			);
+			const result = await db.result(SQL_TOKEN.FETCH_USER_CREDENTIALS, data);
 
 			if (result.rows.length === 0) {
-				return Result.fail("No se encontraron registros");
+				return Result.fail('No se encontraron registros');
 			}
 
 			const { username, tienda_id, rol } = result.rows[0] as DataToken;
-			const secretKey = process.env.JWT_SECRET_KEY || 'LaSuperClave';
+			const secretKey = secretJWT() || 'LaSuperClave';
 
-			const token = Jwt.sign(
-				{ username, tienda_id, rol },
-				secretKey,
-				{ expiresIn: "10000d" }
-			);
+			const token = Jwt.sign({ username, tienda_id, rol }, secretKey, {
+				expiresIn: '10000d',
+			});
 
 			return Result.success(token);
 		} catch (error) {

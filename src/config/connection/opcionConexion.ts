@@ -1,8 +1,8 @@
-import pgPromise from "pg-promise";
-import { camelizeColumns, IClient } from "./funcionConexion";
+import pgPromise from 'pg-promise';
+import { camelizeColumns, IClient } from './funcionConexion';
 
 export const opcionesPG: pgPromise.IInitOptions<IClient> = {
-	receive(data){
+	receive(data) {
 		camelizeColumns(data);
 	},
 };

@@ -9,7 +9,8 @@
 		"build": "tsc",
 		"clean": "rimraf build",
 		"test": "echo \"Error: no test specified\" && exit 1",
-		"vercel-build": "echo hello"
+		"vercel-build": "echo hello",
+		"format": "prettier --write \"**/*.ts\""
 	},
 	"keywords": [],
 	"author": "",
@@ -24,7 +25,9 @@
 		"node-cache": "^5.1.2",
 		"pg": "^8.13.1",
 		"pg-promise": "11.5.4",
-		"portfinder": "1.0.32"
+		"portfinder": "1.0.32",
+		"prettier": "^3.4.2",
+		"zod": "^3.24.1"
 	},
 	"devDependencies": {
 		"@types/cors": "2.8.15",

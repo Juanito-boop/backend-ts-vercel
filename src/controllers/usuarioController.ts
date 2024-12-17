@@ -1,38 +1,46 @@
-import { Request, Response } from "express";
-import { Usuario, UsuarioBulkResult, UsuarioCreationResult, UsuarioR } from "../interface/interfaces";
-import UsuarioDAO from "../dao/usuarioDAO";
-import Result from "../utils/Result";
+import { Request, Response } from 'express';
+import { z } from 'zod';
+import { UsuarioDAO } from '../dao/usuarioDAO';
+import { Usuario, UsuarioSchema } from '../interface/eschemas';
+import Result from '../utils/Result';
+
+const UsuarioCreateSchema = UsuarioSchema.omit({ id: true });
 
 class usuarioController {
 	public async insertUser(req: Request, res: Response): Promise<void> {
-		const { username, password, id_tienda, id_rol } = req.body;
+		const parseResult = UsuarioCreateSchema.safeParse(req.body);
 
-		if ( typeof username !== 'string' || typeof password !== 'string' || typeof id_tienda !== 'number' || typeof id_rol !== 'number' ) {
-			res.status(400).json({ Respuesta: "Invalid input data types" });
+		if (!parseResult.success) {
+			res.status(400).json({
+				Respuesta: 'Invalid input data types',
+				errors: parseResult.error.errors,
+			});
 			return;
 		}
 
-		const data = { username, password, id_tienda, id_rol };
-		const result: Result<UsuarioCreationResult> = await UsuarioDAO.createUser(data);
+		const data = parseResult.data;
+		const result: Result<{ id: string }> = await UsuarioDAO.createUser(data);
 
 		if (result.isSuccess) {
-				res.status(200).json(result.getValue());
+			res.status(200).json(result.getValue());
 		} else {
-				res.status(400).json({ Respuesta: result.getError() });
+			res.status(400).json({ Respuesta: result.getError() });
 		}
-	} 
+	}
 
 	public async insertUsers(req: Request, res: Response): Promise<void> {
-		const users: Omit<Usuario, 'id_usuario'>[] = req.body;
-		for (const user of users) {
-			const { username, password, id_tienda, id_rol } = user;
-			if (typeof username !== 'string' || typeof password !== 'string' || typeof id_tienda !== 'number' || typeof id_rol !== 'number' ) {
-				res.status(400).json({ Respuesta: "Invalid input data types" });
-				return;
-			}
+		const parseArrayResult = z.array(UsuarioCreateSchema).safeParse(req.body);
+
+		if (!parseArrayResult.success) {
+			res.status(400).json({
+				Respuesta: 'Datos inválidos',
+				errors: parseArrayResult.error.errors,
+			});
+			return;
 		}
 
-		const result: Result<UsuarioBulkResult> = await UsuarioDAO.createUsers(users);
+		const users = parseArrayResult.data;
+		const result: Result<{ created: { id: string }[]; errors: string[] }, string> = await UsuarioDAO.createUsers(users);
 
 		if (result.isSuccess) {
 			res.status(200).json(result.getValue());
@@ -41,15 +49,13 @@ class usuarioController {
 		}
 	}
 
-
-	public async fetchUsers(req: Request, res: Response): Promise<void>{
-		const tienda: number = parseInt(req.params.idTienda);
-		
-		if (isNaN(tienda)) {
-			res.status(400).json({ Respuesta: "El id de la tienda no es un número válido" });
+	public async fetchUsers(req: Request, res: Response): Promise<void> {
+		const tienda = req.params.idTienda;
+		if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tienda)) {
+			res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
 			return;
 		}
-		
+
 		const result = await UsuarioDAO.fetchUsers(tienda);
 
 		if (result.isSuccess) {
@@ -59,8 +65,8 @@ class usuarioController {
 		}
 	}
 
-	public async findAllUsers(req: Request, res: Response): Promise<void>{
-		const result: Result<UsuarioR[]> = await UsuarioDAO.finAllUsers();
+	public async findAllUsers(req: Request, res: Response): Promise<void> {
+		const result: Result<Omit<Usuario, 'password'>[]> = await UsuarioDAO.finAllUsers();
 
 		if (result.isSuccess) {
 			res.status(200).json(result.getValue());
@@ -69,12 +75,17 @@ class usuarioController {
 		}
 	}
 
-	public async findUser(req: Request, res: Response): Promise<void>{
-		const idUsuario: number = parseInt(req.params.idUsuario);
-		const tienda: number = parseInt(req.params.idTienda);
-		
-		if (isNaN(tienda) || isNaN(idUsuario)) {
-			res.status(400).json({ Respuesta: "El id del usuario o de la tienda no es un número válido" });
+	public async findUser(req: Request, res: Response): Promise<void> {
+		const idUsuario = req.params.idUsuario;
+		const tienda = req.params.idTienda;
+
+		if (
+			!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tienda) ||
+			!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idUsuario)
+		) {
+			res.status(400).json({
+				Respuesta: 'El id del usuario o de la tienda no es un UUID válido',
+			});
 			return;
 		}
 
@@ -87,33 +98,48 @@ class usuarioController {
 		}
 	}
 
-	public async patchUser(req: Request, res: Response): Promise<void>{
-		const idUsuario: number = parseInt(req.params.idUsuario);
-		const tienda: number = parseInt(req.params.idTienda);
+	public async patchUser(req: Request, res: Response): Promise<void> {
+		const idUsuario = req.params.idUsuario;
+		const tienda = req.params.idTienda;
 		const fieldsToUpdate = req.body;
 
-		if (isNaN(idUsuario) || isNaN(tienda)) {
-			res.status(400).json({ Respuesta: "El id del usuario o de la tienda no es un número válido" });
+		if (
+			!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tienda) ||
+			!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idUsuario)
+		) {
+			res.status(400).json({
+				Respuesta: 'El id del usuario o de la tienda no es un UUID válido',
+			});
 			return;
 		}
 
 		const result = await UsuarioDAO.updateUser(fieldsToUpdate, idUsuario, tienda);
 
 		if (result.isSuccess) {
-			res.status(200).json({ Respuesta: "Usuario actualizado" });
+			res.status(200).json({ Respuesta: 'Usuario actualizado' });
 		} else {
 			res.status(400).json({ Respuesta: result.getError() });
 		}
 	}
 
-	public async deleteUser(req: Request, res: Response): Promise<void>{
+	public async deleteUser(req: Request, res: Response): Promise<void> {
 		const idUsuario = req.params.idUsuario;
-		const tienda = req.params.idTienda
-		
+		const tienda = req.params.idTienda;
+
+		if (
+			!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tienda) ||
+			!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idUsuario)
+		) {
+			res.status(400).json({
+				Respuesta: 'El id del usuario o de la tienda no es un UUID válido',
+			});
+			return;
+		}
+
 		const result = await UsuarioDAO.deleteUser(tienda, idUsuario);
 
 		if (result.isSuccess) {
-			res.status(200).json({ Respuesta: "Usuario eliminado" });
+			res.status(200).json({ Respuesta: 'Usuario eliminado' });
 		} else {
 			res.status(400).json({ Respuesta: result.getError() });
 		}

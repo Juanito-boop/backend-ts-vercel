@@ -1,7 +1,6 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import tiendaController from "../controllers/tiendaController";
-import cacheMiddleware from "../middleware/Cache";
+import tiendaController from '../controllers/tiendaController';
 
 class Rutas {
 	public rutasApi: Router;
@@ -18,24 +17,12 @@ class Rutas {
 
 	public rutas() {
 		// /api/v1/public/tiendas
-		this.rutasApi.post("/", tiendaController.insertStore);
-		this.rutasApi.get(
-			"/",
-			 cacheMiddleware(),
-			tiendaController.fetchStores
-		);
-		this.rutasApi.get(
-			"/empleados",
-			 cacheMiddleware(),
-			tiendaController.fetchEmployeeCounterStores
-		);
-		this.rutasApi.get(
-			"/:idTienda",
-			 cacheMiddleware(),
-			tiendaController.filterStoreById
-		);
-		this.rutasApi.patch("/:idTienda", tiendaController.patchStore);
-		this.rutasApi.delete("/:idTienda", tiendaController.deleteStore);
+		this.rutasApi.post('/', tiendaController.insertStore);
+		this.rutasApi.get('/', tiendaController.fetchStores);
+		this.rutasApi.get('/empleados', tiendaController.fetchEmployeeCounterStores);
+		this.rutasApi.get('/:idTienda', tiendaController.filterStoreById);
+		this.rutasApi.patch('/:idTienda', tiendaController.patchStore);
+		this.rutasApi.delete('/:idTienda', tiendaController.deleteStore);
 	}
 }
 

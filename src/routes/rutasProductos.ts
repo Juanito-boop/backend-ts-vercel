@@ -1,6 +1,6 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import ProductoController from "../controllers/productoController";
+import ProductoController from '../controllers/productoController';
 
 class RutasProductos {
 	public rutasApi: Router;
@@ -13,12 +13,12 @@ class RutasProductos {
 	}
 	public rutas() {
 		// /api/v1/public/productos
-		this.rutasApi.post("/", ProductoController.createProduct);
-		this.rutasApi.get("/:idTienda", ProductoController.fetchProducts );
-		this.rutasApi.get("/:idTienda/counter", ProductoController.productsCounter);
-		this.rutasApi.get("/:idTienda/:idProducto", ProductoController.filterProductById);
-		this.rutasApi.patch("/:idTienda/:idProducto", ProductoController.updateProduct);
-		this.rutasApi.delete("/:idTienda/:idProducto", ProductoController.deleteProduct);
+		this.rutasApi.post('/', ProductoController.createProduct);
+		this.rutasApi.get('/:idTienda', ProductoController.fetchProducts);
+		this.rutasApi.get('/:idTienda/counter', ProductoController.productsCounter);
+		this.rutasApi.get('/:idTienda/:idProducto', ProductoController.filterProductById);
+		this.rutasApi.patch('/:idTienda/:idProducto', ProductoController.updateProduct);
+		this.rutasApi.delete('/:idTienda/:idProducto', ProductoController.deleteProduct);
 	}
 }
 const misRutas = new RutasProductos();

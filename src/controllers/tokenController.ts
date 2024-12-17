@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
-import { Token } from "../interface/interfaces";
-import tokenDAO from "../dao/tokenDAO";
+import { Request, Response } from 'express';
+import { Token } from '../interface/eschemas';
+import tokenDAO from '../dao/tokenDAO';
 
 class tokenController {
 	public async createToken(req: Request, res: Response): Promise<void> {
@@ -10,7 +10,7 @@ class tokenController {
 		const result = await tokenDAO.generateToken(data);
 
 		if (result.isSuccess) {
-			res.status(200).json(result.getValue())
+			res.status(200).json(result.getValue());
 		} else {
 			res.status(400).json({ respuesta: result.getError() });
 		}

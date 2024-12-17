@@ -1,11 +1,23 @@
 import { Request, Response } from 'express';
-import { Producto } from '../interface/interfaces';
+import { ProductoSchema } from '../interface/eschemas';
 import productoDAO from '../dao/productoDAO';
+import { z } from 'zod';
+
+const ProductoCreateSchema = ProductoSchema.omit({ id: true });
 
 class ProductoController {
-	public static async createProduct(req: Request, res: Response): Promise<void> {
-		const { nombre, marca, precio_unitario, descripcion, stock, categoria_id, tienda_id } = req.body;
-		const data: Producto[] = [ nombre, marca, precio_unitario, descripcion, stock, categoria_id, tienda_id ];
+	public async createProduct(req: Request, res: Response): Promise<void> {
+		const parseResult = ProductoCreateSchema.safeParse(req.body);
+
+		if (!parseResult.success) {
+			res.status(400).json({
+				Respuesta: 'Datos inválidos',
+				errors: parseResult.error.errors,
+			});
+			return;
+		}
+
+		const data = parseResult.data;
 		const result = await productoDAO.insertProduct(data);
 
 		if (result.isSuccess) {
@@ -15,20 +27,13 @@ class ProductoController {
 		}
 	}
 
-	public static async productsCounter(req: Request, res: Response): Promise<void> {
-    const tienda = req.params.idTienda;
-
-    const result = await productoDAO.productsCounter(tienda);
-
-    if (result.isSuccess) {
-        res.status(200).json({ count: result.getValue() });
-    } else {
-        res.status(400).json({ Respuesta: result.getError() });
-    }
-}
-
-	public static async fetchProducts(req: Request, res: Response): Promise<void> {
+	public async fetchProducts(req: Request, res: Response): Promise<void> {
 		const tienda = req.params.idTienda;
+
+		if (!z.string().uuid().safeParse(tienda).success) {
+			res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
+			return;
+		}
 
 		const result = await productoDAO.fetchProducts(tienda);
 
@@ -39,12 +44,12 @@ class ProductoController {
 		}
 	}
 
-	public static async filterProductById(req: Request, res: Response): Promise<void> {
-		const tienda: number = parseInt(req.params.idTienda);
-		const idProducto: number = parseInt(req.params.idProducto);
+	public async filterProductById(req: Request, res: Response): Promise<void> {
+		const tienda = req.params.idTienda;
+		const idProducto = req.params.idProducto;
 
-		if (isNaN(tienda) || isNaN(idProducto)) {
-			res.status(400).json({ Respuesta: "El id de la tienda y del producto deben ser números" });
+		if (!z.string().uuid().safeParse(tienda).success || !z.string().uuid().safeParse(idProducto).success) {
+			res.status(400).json({ Respuesta: 'Los IDs deben ser UUID válidos' });
 			return;
 		}
 
@@ -57,32 +62,69 @@ class ProductoController {
 		}
 	}
 
-	public static async updateProduct(req: Request, res: Response): Promise<void> {
+	public async updateProduct(req: Request, res: Response): Promise<void> {
 		const tienda = req.params.idTienda;
-		const id_producto = req.params.idProducto;
-		const fieldsToUpdate: Producto = req.body;
+		const idProducto = req.params.idProducto;
 
-		const result = await productoDAO.updateProduct(fieldsToUpdate, id_producto, tienda);
+		if (!z.string().uuid().safeParse(tienda).success || !z.string().uuid().safeParse(idProducto).success) {
+			res.status(400).json({ Respuesta: 'Los IDs deben ser UUID válidos' });
+			return;
+		}
+
+		const fieldsToUpdate = ProductoSchema.partial().omit({ id: true }).safeParse(req.body);
+
+		if (!fieldsToUpdate.success) {
+			res.status(400).json({
+				Respuesta: 'Datos inválidos',
+				errors: fieldsToUpdate.error.errors,
+			});
+			return;
+		}
+
+		const result = await productoDAO.updateProduct(fieldsToUpdate.data, idProducto, tienda);
 
 		if (result.isSuccess) {
-			res.status(200).json({ Respuesta: "Producto actualizado" });
+			res.status(200).json({ Respuesta: 'Producto actualizado' });
 		} else {
 			res.status(400).json({ Respuesta: result.getError() });
 		}
 	}
 
-	public static async deleteProduct(req: Request, res: Response): Promise<void> {
+	public async productsCounter(req: Request, res: Response): Promise<void> {
+		const tienda = req.params.idTienda;
+
+		if (!z.string().uuid().safeParse(tienda).success) {
+			res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
+			return;
+		}
+
+		const result = await productoDAO.productsCounter(tienda);
+
+		if (result.isSuccess) {
+			res.status(200).json({ count: result.getValue() });
+		} else {
+			res.status(400).json({ Respuesta: result.getError() });
+		}
+	}
+
+	public async deleteProduct(req: Request, res: Response): Promise<void> {
 		const tienda = req.params.idTienda;
 		const idProducto = req.params.idProducto;
+
+		if (!z.string().uuid().safeParse(tienda).success || !z.string().uuid().safeParse(idProducto).success) {
+			res.status(400).json({ Respuesta: 'Los IDs deben ser UUID válidos' });
+			return;
+		}
 
 		const result = await productoDAO.deleteProduct(tienda, idProducto);
 
 		if (result.isSuccess) {
-			res.status(200).json({ Respuesta: "Producto eliminado" });
+			res.status(200).json({ Respuesta: 'Producto eliminado' });
 		} else {
 			res.status(400).json({ Respuesta: result.getError() });
 		}
 	}
 }
 
-export default ProductoController;
+const productoController = new ProductoController();
+export default productoController;

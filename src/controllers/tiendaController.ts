@@ -1,10 +1,23 @@
-import { Request, Response } from "express";
-import tiendaDAO from "../dao/tiendaDAO";
-import { Tienda } from "../interface/interfaces";
+import { Request, Response } from 'express';
+import { TiendaSchema } from '../interface/eschemas';
+import tiendaDAO from '../dao/tiendaDAO';
+import { z } from 'zod';
+
+const TiendaCreateSchema = TiendaSchema.omit({ id: true });
 
 class TiendaController {
 	public async insertStore(req: Request, res: Response): Promise<void> {
-		const data: Tienda[] = req.body;
+		const parseResult = TiendaCreateSchema.safeParse(req.body);
+
+		if (!parseResult.success) {
+			res.status(400).json({
+				Respuesta: 'Datos inválidos',
+				errors: parseResult.error.errors,
+			});
+			return;
+		}
+
+		const data = parseResult.data;
 		const result = await tiendaDAO.addNewStore(data);
 
 		if (result.isSuccess) {
@@ -38,7 +51,13 @@ class TiendaController {
 	}
 
 	public async filterStoreById(req: Request, res: Response): Promise<void> {
-		const idStore: number = parseInt(req.params.idTienda);
+		const idStore = req.params.idTienda;
+
+		if (!z.string().uuid().safeParse(idStore).success) {
+			res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
+			return;
+		}
+
 		const result = await tiendaDAO.filterStoreById(idStore);
 
 		if (result.isSuccess) {
@@ -49,35 +68,44 @@ class TiendaController {
 	}
 
 	public async patchStore(req: Request, res: Response): Promise<void> {
-		const idTienda: number = parseInt(req.params.idTienda);
-		const fieldsToUpdate: Tienda = req.body;
+		const idTienda = req.params.idTienda;
 
-		if (isNaN(idTienda)) {
-			res.status(400).json({ Respuesta: "El id de la tienda debe ser un número" });
+		if (!z.string().uuid().safeParse(idTienda).success) {
+			res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
 			return;
 		}
 
-		const result = await tiendaDAO.updateStore(fieldsToUpdate, idTienda);
+		const fieldsToUpdate = TiendaSchema.partial().omit({ id: true }).safeParse(req.body);
+
+		if (!fieldsToUpdate.success) {
+			res.status(400).json({
+				Respuesta: 'Datos inválidos',
+				errors: fieldsToUpdate.error.errors,
+			});
+			return;
+		}
+
+		const result = await tiendaDAO.updateStore(fieldsToUpdate.data, idTienda);
 
 		if (result.isSuccess) {
-			res.status(200).json({ Respuesta: "Tienda actualizada" });
+			res.status(200).json({ Respuesta: 'Tienda actualizada' });
 		} else {
 			res.status(400).json({ Respuesta: result.getError() });
 		}
 	}
 
 	public async deleteStore(req: Request, res: Response): Promise<void> {
-		const idTienda: number = parseInt(req.params.idTienda);
+		const idTienda = req.params.idTienda;
 
-		if (isNaN(idTienda)) {
-			res.status(400).json({ Respuesta: "El id de la tienda debe ser un número" });
+		if (!z.string().uuid().safeParse(idTienda).success) {
+			res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
 			return;
 		}
 
 		const result = await tiendaDAO.deleteStore(idTienda);
 
 		if (result.isSuccess) {
-			res.status(200).json({ Respuesta: "Tienda eliminada" });
+			res.status(200).json({ Respuesta: 'Tienda eliminada' });
 		} else {
 			res.status(400).json({ Respuesta: result.getError() });
 		}
