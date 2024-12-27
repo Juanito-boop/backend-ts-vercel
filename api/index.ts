@@ -1,3 +1,4 @@
-import application from '../src/index';
+import { application } from '../src/index';
 
-export default application;
+const appInstance = new application();
+export default appInstance.app;

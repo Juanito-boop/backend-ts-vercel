@@ -79,33 +79,46 @@ export class UsuarioDAO {
 		}
 	}
 
-	public static async updateUser(fieldsToUpdate: { [key: string]: any }, id: string, tienda_id: string): Promise<Result<void>> {
-		if (Object.keys(fieldsToUpdate).length === 0) {
-			return Result.fail('No se proporcionaron campos para actualizar');
-		}
+	public static async updateUser(
+  fieldsToUpdate: { [key: string]: any },
+  id: string,
+  tienda_id: string
+): Promise<Result<void>> {
+  if (Object.keys(fieldsToUpdate).length === 0) {
+    return Result.fail('No se proporcionaron campos para actualizar');
+  }
 
-		const existingUser = await db.oneOrNone(SQL_USUARIO.findUserByStoreAndId, [id, tienda_id]);
+  const existingUser = await db.oneOrNone(SQL_USUARIO.findUserByStoreAndId, [id, tienda_id]);
 
-		if (!existingUser) {
-			return Result.fail('Usuario no encontrado');
-		}
+  if (!existingUser) {
+    return Result.fail('Usuario no encontrado');
+  }
 
-		try {
-			const setClause = Object.keys(fieldsToUpdate)
-				.map((field, index) => `${field} = $${index + 1}`)
-				.join(', ');
+  try {
+    // Filtrar campos vacíos o no deseados
+    const filteredFieldsToUpdate = Object.fromEntries(
+      Object.entries(fieldsToUpdate).filter(([_, value]) => value !== undefined && value !== "")
+    );
 
-			const values = Object.values(fieldsToUpdate);
-			values.push(id, tienda_id);
+    if (Object.keys(filteredFieldsToUpdate).length === 0) {
+      return Result.fail('No se proporcionaron campos válidos para actualizar');
+    }
 
-			const sqlUpdate = `UPDATE usuarios SET ${setClause} WHERE id = $${values.length - 1} AND tienda_id = $${values.length}`;
+    const setClause = Object.keys(filteredFieldsToUpdate)
+      .map((field, index) => `${field} = $${index + 1}`)
+      .join(', ');
 
-			await db.query(sqlUpdate, values);
-			return Result.success();
-		} catch (error) {
-			return Result.fail(`No se puede actualizar el usuario, ${error}`);
-		}
-	}
+    const values = Object.values(filteredFieldsToUpdate);
+    values.push(id, tienda_id);
+
+    const sqlUpdate = `UPDATE usuarios SET ${setClause} WHERE id = $${values.length - 1} AND tienda_id = $${values.length}`;
+
+    await db.query(sqlUpdate, values);
+    return Result.success();
+  } catch (error) {
+    return Result.fail(`No se puede actualizar el usuario, ${error}`);
+  }
+}
 
 	public static async deleteUser(tienda_id: string, id: string) {
 		const existingUser = await db.oneOrNone(SQL_USUARIO.findUserByStoreAndId, [id, tienda_id]);

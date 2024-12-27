@@ -16,15 +16,28 @@ export default class tokenDAO {
 			}
 
 			const { username, tienda_id, rol } = result.rows[0] as DataToken;
+			const url = this.getUrlByRole(rol);
+			(result.rows[0] as DataToken).url = url;
 			const secretKey = secretJWT() || 'LaSuperClave';
 
-			const token = Jwt.sign({ username, tienda_id, rol }, secretKey, {
+			const token = Jwt.sign({ username, tienda_id, rol, url }, secretKey, {
 				expiresIn: '10000d',
 			});
 
 			return Result.success(token);
 		} catch (error) {
 			return Result.fail(`No se puede generar el token, ${(error as Error).message}`);
+		}
+	}
+
+	private static getUrlByRole(rol: string): string {
+		switch (rol) {
+			case 'Administrador':
+				return '/dashboard/administrador';
+			case 'Cajero':
+				return '/dashboard/cajero/facturas';
+			default:
+				return '/';
 		}
 	}
 }

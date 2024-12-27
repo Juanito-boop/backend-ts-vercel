@@ -1,31 +1,40 @@
 import { db } from '../config/connection/conexion';
-import { Producto, ProductosFetched } from '../interface/eschemas';
+import { Producto, ProductoCreate, productoCreateSchema, ProductosFetched, ProductoUpdate } from '../interface/eschemas';
 import { SQL_PRODUCTOS } from '../repository/crudSQL';
 import Result from '../utils/Result';
 
 export default class ProductoDAO {
-	public static async insertProduct(data: Omit<Producto, 'id'>): Promise<Result<any>> {
-		const { nombre, marca, precio_unitario, descripcion, stock, categoria_id, tienda_id } = data;
-
-		const existingProduct = await db.oneOrNone(SQL_PRODUCTOS.isProductDuplicate, [
-			nombre,
-			marca,
-			precio_unitario,
-			descripcion,
-			stock,
-			categoria_id,
-			tienda_id,
-		]);
-
-		if (existingProduct?.exists) {
-			return Result.fail('El producto ya existe');
-		}
-
+	public static async insertProduct(data: ProductoCreate): Promise<Result<any>> {
 		try {
-			const result = await db.one(SQL_PRODUCTOS.CREAR, [nombre, marca, precio_unitario, descripcion, stock, categoria_id, tienda_id]);
+			const validatedData = productoCreateSchema.parse(data);
+
+			const { nombre, marca, precio_unitario, descripcion, stock, categoria_id, tienda_id } = validatedData;
+
+			const existingProduct = await db.oneOrNone(SQL_PRODUCTOS.isProductDuplicate, [
+				nombre,
+				marca,
+				precio_unitario,
+				descripcion,
+				categoria_id,
+				tienda_id,
+			]);
+
+			if (existingProduct?.exists) {
+					return Result.fail('El producto ya existe');
+			}
+
+			const result = await db.one(SQL_PRODUCTOS.CREAR, [
+				nombre,
+				marca,
+				precio_unitario,
+				descripcion,
+				stock.cantidad,
+				categoria_id,
+				tienda_id,
+			]);
 			return Result.success(result);
 		} catch (error) {
-			return Result.fail(`No se puede crear el producto, ${error}`);
+				return Result.fail(`No se puede crear el producto, ${error}`);
 		}
 	}
 
@@ -47,25 +56,30 @@ export default class ProductoDAO {
 		}
 	}
 
-	public static async updateProduct(fieldsToUpdate: Partial<Producto>, id_producto: string, tienda_id: string): Promise<Result<void>> {
-		try {
-			const updates = Object.entries(fieldsToUpdate)
-				.map(([key, _], index) => `${key} = $${index + 1}`)
-				.join(', ');
-			const values = [...Object.values(fieldsToUpdate), id_producto, tienda_id];
-
-			const sqlUpdate = `
-        UPDATE productos
-        SET ${updates}
-        WHERE id = $${values.length - 1} AND tienda_id = $${values.length};
-      `;
-
-			await db.query(sqlUpdate, values);
-			return Result.success();
-		} catch (error) {
-			return Result.fail(`No se puede actualizar el producto, ${error}`);
+	public static async updateProduct(fieldsToUpdate: Partial<ProductoUpdate>, id_producto: string, tienda_id: string): Promise<Result<void>> {
+	try {
+		if (Object.keys(fieldsToUpdate).length === 0) {
+			return Result.fail('No hay campos válidos para actualizar');
 		}
+
+		const updates = Object.entries(fieldsToUpdate)
+			.map(([key, _], index) => `${key} = $${index + 1}`)
+			.join(', ');
+		const values = [...Object.values(fieldsToUpdate), id_producto, tienda_id];
+
+		const sqlUpdate = `
+			UPDATE productos
+			SET ${updates}
+			WHERE id = $${values.length - 1} AND tienda_id = $${values.length};
+		`;
+
+		await db.query(sqlUpdate, values);
+		return Result.success();
+	} catch (error) {
+		return Result.fail(`No se puede actualizar el producto, ${error}`);
 	}
+}
+
 
 	public static async productsCounter(tienda_id: string): Promise<Result<number>> {
 		try {

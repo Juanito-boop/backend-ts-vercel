@@ -13,7 +13,7 @@ import rutasTienda from './routes/rutasTienda';
 import rutasUsuario from './routes/rutasUsuario';
 import tokenRuta from './routes/TokenRuta';
 
-export default class application {
+export class application {
 	public app: express.Application;
 	public port: number;
 	v1: string = '/api/v1/public';
@@ -35,6 +35,7 @@ export default class application {
 	}
 
 	public activarRutas(): void {
+		this.app.get('/', (req, res) => res.send('Bienvenido a la API desplegada en vercel'));
 		this.app.use(`${this.v1}/categorias`, seguridad.revisar, rutasCategorias);
 		this.app.use(`${this.v1}/productos`, seguridad.revisar, rutasProductos);
 		this.app.use(`${this.v1}/tiendas`, seguridad.revisar, rutasTienda);
@@ -45,7 +46,7 @@ export default class application {
 	public arrancar(): void {
 		portfinder.basePort = this.port;
 		portfinder
-			.getPortPromise()
+			.getPortPromise()	
 			.then((port) => {
 				this.app.listen(port, () => {
 					console.log(`Servidor corriendo en el puerto ${port}`);
@@ -60,5 +61,3 @@ export default class application {
 			});
 	}
 }
-
-new application();
