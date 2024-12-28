@@ -1,0 +1,79 @@
+generator client {
+	provider = "prisma-client-js"
+}
+
+datasource db {
+	provider  = "postgresql"
+	url       = env("DATABASE_SUPABASE_URL")
+	directUrl = env("DIRECT_SUPABASE_URL")
+}
+
+model categorias {
+	id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+	nombre      String
+	descripcion String
+	tienda_id   String      @db.Uuid
+	tiendas     tiendas     @relation(fields: [tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+	productos   productos[]
+}
+
+model historial_stock {
+	id          String    @id(map: "historial_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+	producto_id String    @db.Uuid
+	cantidad    Int
+	fecha_hora  DateTime  @default(now()) @db.Timestamptz(6)
+	productos   productos @relation(fields: [producto_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model productos {
+	id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+	nombre          String
+	marca           String
+	precio_unitario Decimal           @db.Decimal
+	descripcion     String
+	categoria_id    String            @db.Uuid
+	tienda_id       String            @db.Uuid
+	historial_stock historial_stock[]
+	categorias      categorias        @relation(fields: [categoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+	tiendas         tiendas           @relation(fields: [tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+	@@index([categoria_id], map: "idx_productos_categoria_id")
+	@@index([tienda_id], map: "idx_productos_tienda_id")
+}
+
+model proveedores {
+	id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+	nombre    String
+	contacto  String
+	telefono  String
+	tienda_id String  @db.Uuid
+	tiendas   tiendas @relation(fields: [tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model tiendas {
+	id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+	nombre      String
+	direccion   String
+	telefono    String
+	propietario String
+	categorias  categorias[]
+	productos   productos[]
+	proveedores proveedores[]
+	usuarios    usuarios[]
+}
+
+model usuarios {
+	id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+	username  String
+	password  String
+	tienda_id String   @db.Uuid
+	rol       rol_enum
+	tiendas   tiendas  @relation(fields: [tienda_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+	@@index([tienda_id], map: "idx_usuarios_tienda_id")
+}
+
+enum rol_enum {
+	Administrador
+	Cajero
+}
