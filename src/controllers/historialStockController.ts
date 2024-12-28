@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import historialStockDAO from '../dao/historialstockDAO';
+import historialStockDAO from '../dao/historialStockDAO';
 
 export default class HistorialStockController {
 	public static async bulkInsert(req: Request, res: Response) {
