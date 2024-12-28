@@ -16,7 +16,6 @@ class ProductoController {
     }
 
     const data = parseResult.data;
-    console.log('Datos validados:', data);
 
     const result = await productoDAO.insertProduct(data);
 
@@ -28,21 +27,21 @@ class ProductoController {
 }
 
 	public async fetchProducts(req: Request, res: Response): Promise<void> {
-		const tienda = req.params.idTienda;
+    const tienda = req.params.idTienda;
 
-		if (!z.string().uuid().safeParse(tienda).success) {
-			res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
-			return;
-		}
+    if (!z.string().uuid().safeParse(tienda).success) {
+      res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
+      return;
+    }
 
-		const result = await productoDAO.fetchProducts(tienda);
+    const result = await productoDAO.fetchProducts(tienda);
 
-		if (result.isSuccess) {
-			res.status(200).json(result.getValue());
-		} else {
-			res.status(400).json({ Respuesta: result.getError() });
-		}
-	}
+    if (result.isSuccess) {
+      res.status(200).json(result.getValue());
+    } else {
+      res.status(400).json({ Respuesta: result.getError() });
+    }
+  }
 
 	public async filterProductById(req: Request, res: Response): Promise<void> {
 		const tienda = req.params.idTienda;

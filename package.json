@@ -15,6 +15,7 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
+		"@prisma/client": "^6.1.0",
 		"@types/jsonwebtoken": "9.0.6",
 		"cors": "2.8.5",
 		"express": "^4.21.2",
@@ -27,6 +28,7 @@
 		"portfinder": "1.0.32",
 		"postgres": "^3.4.5",
 		"prettier": "^3.4.2",
+		"prisma": "^6.1.0",
 		"zod": "^3.24.1"
 	},
 	"devDependencies": {

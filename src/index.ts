@@ -11,6 +11,7 @@ import rutasCategorias from './routes/rutasCategorias';
 import rutasProductos from './routes/rutasProductos';
 import rutasTienda from './routes/rutasTienda';
 import rutasUsuario from './routes/rutasUsuario';
+import rutasStock from './routes/rutasStock';
 import tokenRuta from './routes/TokenRuta';
 
 export class application {
@@ -41,6 +42,7 @@ export class application {
 		this.app.use(`${this.v1}/tiendas`, seguridad.revisar, rutasTienda);
 		this.app.use(`${this.v1}/token`, tokenRuta);
 		this.app.use(`${this.v1}/usuarios`, seguridad.revisar, rutasUsuario);
+		this.app.use(`${this.v1}/historialstock`,seguridad.revisar, rutasStock);
 	}
 
 	public arrancar(): void {
