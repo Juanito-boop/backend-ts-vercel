@@ -1,11 +1,9 @@
-import { HistorialStockItemSchema } from "../interface/eschemas";
-import prisma from "../prisma";
-import Result from "../utils/Result";
+import { HistorialStockItemSchema } from '@interface/eschemas';
+import prisma from '@src/prisma';
+import Result from '@utils/Result';
 
 export default class historialStockDAO {
-	public static async insertBulkHistorial(
-		items: Array<{ producto_id: string; cantidad: number }>
-	): Promise<Result<void>> {
+	public static async insertBulkHistorial(items: Array<{ producto_id: string; cantidad: number }>) {
 		try {
 			for (const item of items) {
 				HistorialStockItemSchema.parse(item);

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import UsuarioController from '../controllers/usuarioController';
+import UsuarioController from '@controllers/usuarioController';
 
 class Rutas {
 	public rutasApi: Router;
@@ -16,8 +16,6 @@ class Rutas {
 	public rutas() {
 		// /api/v1/public/usuarios
 		this.rutasApi.post('/', UsuarioController.insertUser);
-		this.rutasApi.post('/many', UsuarioController.insertUsers);
-		this.rutasApi.get('/', UsuarioController.findAllUsers);
 		this.rutasApi.get('/:idTienda', UsuarioController.fetchUsers);
 		this.rutasApi.get('/:idTienda/:idUsuario', UsuarioController.findUser);
 		this.rutasApi.patch('/:idTienda/:idUsuario', UsuarioController.patchUser);

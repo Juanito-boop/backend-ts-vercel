@@ -1,21 +1,37 @@
-import { db } from '../config/connection/conexion';
-import { Tienda } from '../interface/eschemas';
-import { SQL_TIENDAS } from '../repository/crudSQL';
-import Result from '../utils/Result';
+import prisma from '@src/prisma';
+import { Tienda, TiendaCreate } from '@interface/eschemas';
+import Result from '@utils/Result';
 
 export default class TiendaDAO {
-	public static async addNewStore(data: Omit<Tienda, 'id'>): Promise<Result<any>> {
+	public static async addNewStore(data: TiendaCreate): Promise<Result<{ id: string }>> {
 		const { nombre, direccion, telefono, propietario } = data;
 
-		const existingStore = await db.oneOrNone(SQL_TIENDAS.isStoreDuplicate, [nombre, direccion, telefono, propietario]);
+		const existingStore = await prisma.tiendas.findFirst({
+			where: {
+				nombre: { equals: nombre, mode: 'insensitive' },
+				direccion: { equals: direccion, mode: 'insensitive' },
+				telefono: { equals: telefono, mode: 'insensitive' },
+				propietario: { equals: propietario, mode: 'insensitive' },
+			},
+			select: { id: true },
+		});
 
-		if (existingStore?.exists) {
+		if (existingStore) {
 			return Result.fail('La tienda ya existe');
 		}
 
 		try {
-			const result = await db.one(SQL_TIENDAS.createStore, [nombre, direccion, telefono, propietario]);
-			return Result.success(result);
+			const newStore = await prisma.tiendas.create({
+				data: {
+					nombre,
+					direccion,
+					telefono,
+					propietario,
+				},
+				select: { id: true },
+			});
+
+			return Result.success({ id: newStore.id });
 		} catch (error) {
 			return Result.fail(`No se puede crear la tienda, ${error}`);
 		}
@@ -23,17 +39,36 @@ export default class TiendaDAO {
 
 	public static async fetchStores(): Promise<Result<Tienda[]>> {
 		try {
-			const result: Tienda[] = await db.manyOrNone(SQL_TIENDAS.getStores);
-			return Result.success(result);
+			const stores = await prisma.tiendas.findMany({
+				select: {
+					id: true,
+					nombre: true,
+					direccion: true,
+					telefono: true,
+					propietario: true,
+				}
+			});
+
+			return Result.success(stores as Tienda[]);
 		} catch (error) {
 			return Result.fail(`No se puede obtener las tiendas, ${error}`);
 		}
 	}
 
-	public static async fetchEmployeeCounterStores(limit: number, offset: number): Promise<Result<any[]>> {
+	public static async fetchEmployeeCounterStores() {
 		try {
-			const result = await db.manyOrNone(SQL_TIENDAS.employeeCounter, [limit, offset]);
-			return Result.success(result);
+			const rawResult = await prisma.$queryRaw<any[]>`
+			  SELECT
+			    t.id,
+			    t.nombre,
+			    COUNT(u.id)::integer AS "# empleados"
+			  FROM tiendas t
+			  JOIN usuarios u ON t.id = u.tienda_id
+			  GROUP BY t.id, t.nombre
+			  ORDER BY t.id ASC
+			`;
+			return Result.success(rawResult);
+
 		} catch (error) {
 			return Result.fail(`No se puede obtener el contador de empleados, ${error}`);
 		}
@@ -41,8 +76,14 @@ export default class TiendaDAO {
 
 	public static async filterStoreById(idStore: string): Promise<Result<Tienda | null>> {
 		try {
-			const result: Tienda | null = await db.oneOrNone(SQL_TIENDAS.getStoreById, [idStore]);
-			return Result.success(result);
+			const store = await prisma.tiendas.findUnique({
+				where: {
+					id: idStore,
+				}
+			});
+
+			// Podrías retornar store o null
+			return Result.success(store as Tienda | null);
 		} catch (error) {
 			return Result.fail(`No se puede obtener la tienda, ${error}`);
 		}
@@ -50,18 +91,23 @@ export default class TiendaDAO {
 
 	public static async updateStore(fieldsToUpdate: Partial<Tienda>, idStore: string): Promise<Result<void>> {
 		try {
-			const updates = Object.entries(fieldsToUpdate)
-				.map(([key, _], index) => `${key} = $${index + 1}`)
-				.join(', ');
-			const values = [...Object.values(fieldsToUpdate), idStore];
+			const existing = await prisma.tiendas.findUnique({
+				where: { id: idStore },
+			});
 
-			const sqlUpdate = `
-        UPDATE tiendas
-        SET ${updates}
-        WHERE id = $${values.length};
-      `;
+			if (!existing) {
+				return Result.fail('Tienda no encontrada');
+			}
 
-			await db.query(sqlUpdate, values);
+			const filteredFieldsToUpdate = Object.fromEntries(
+				Object.entries(fieldsToUpdate).filter(([_, val]) => val !== undefined && val !== '')
+			);
+
+			await prisma.tiendas.update({
+				where: { id: idStore },
+				data: filteredFieldsToUpdate,
+			});
+
 			return Result.success();
 		} catch (error) {
 			return Result.fail(`No se puede actualizar la tienda, ${error}`);
@@ -70,13 +116,19 @@ export default class TiendaDAO {
 
 	public static async deleteStore(idStore: string): Promise<Result<void>> {
 		try {
-			const result = await db.result(SQL_TIENDAS.deleteStore, [idStore]);
+			const existing = await prisma.tiendas.findUnique({
+				where: { id: idStore },
+			});
 
-			if (result.rowCount > 0) {
-				return Result.success();
-			} else {
+			if (!existing) {
 				return Result.fail('Tienda no encontrada');
 			}
+
+			await prisma.tiendas.delete({
+				where: { id: idStore },
+			});
+
+			return Result.success();
 		} catch (error) {
 			return Result.fail(`No se puede eliminar la tienda, ${error}`);
 		}

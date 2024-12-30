@@ -10,12 +10,16 @@ export const TiendaSchema = z.object({
 	propietario: z.string(),
 });
 
+export const tiendaCreateSchema = TiendaSchema.omit({ id: true });
+
 export const CategoriaSchema = z.object({
 	id: z.string().uuid(),
 	nombre: z.string(),
 	descripcion: z.string(),
 	tienda_id: z.string().uuid(),
 });
+
+export const CategoriaCreateSchema = CategoriaSchema.omit({ id: true });
 
 export const ProductoSchema = z.object({
 	id: z.string().uuid(),
@@ -37,10 +41,12 @@ export const FetchedProductSchema = z.object({
 	marca: z.string(),
 	precio_unitario: z.number(),
 	descripcion: z.string(),
-	stock: z.array(z.object({
-		cantidad: z.number(),
-		fecha_hora: z.string(),
-	})),
+	stock: z.array(
+		z.object({
+			cantidad: z.number(),
+			fecha_hora: z.string(),
+		}),
+	),
 	categoria: z.object({
 		categoria_id: z.string().uuid(),
 		nombre: z.string(),
@@ -76,6 +82,8 @@ export const UsuarioSchema = z.object({
 	rol: RolEnum,
 });
 
+export const UsuarioFetchSchema = UsuarioSchema.omit({ password: true });
+
 export const TokenSchema = z.object({
 	username: z.string(),
 	password: z.string(),
@@ -94,6 +102,9 @@ export const HistorialStockItemSchema = z.object({
 	cantidad: z.number(),
 });
 
+export const UsuarioCreateSchema = UsuarioSchema.omit({ id: true });
+export type UsuarioCreate = z.infer<typeof UsuarioCreateSchema>;
+
 export type Categoria = z.infer<typeof CategoriaSchema>;
 export type DataToken = z.infer<typeof TokenDataSchema>;
 export type Producto = z.infer<typeof ProductoSchema>;
@@ -106,3 +117,6 @@ export type Token = z.infer<typeof TokenSchema>;
 export type Usuario = z.infer<typeof UsuarioSchema>;
 export type ProductoCreate = z.infer<typeof productoCreateSchema>;
 export type HistorialStockItem = z.infer<typeof HistorialStockItemSchema>;
+export type CategoriaCreate = z.infer<typeof CategoriaCreateSchema>;
+export type UsuarioFetch = z.infer<typeof UsuarioFetchSchema>;
+export type TiendaCreate = z.infer<typeof tiendaCreateSchema>;

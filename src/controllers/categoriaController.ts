@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import CategoriaDAO from '../dao/categoriaDAO';
-import { CategoriaSchema } from '../interface/eschemas';
+import CategoriaDAO from '@dao/categoriaDAO';
+import { CategoriaSchema } from '@interface/eschemas';
 import { z } from 'zod';
 
 const CategoriaCreateSchema = CategoriaSchema.omit({ id: true });

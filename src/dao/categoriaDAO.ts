@@ -1,73 +1,157 @@
-import { db } from '../config/connection/conexion';
-import { Categoria } from '../interface/eschemas';
-import { SQL_CATEGORIAS } from '../repository/crudSQL';
-import Result from '../utils/Result';
+import { Categoria, CategoriaCreate, CategoriaCreateSchema } from '@interface/eschemas';
+import ProductoDAO from '@dao/productoDAO';
+import prisma from '@src/prisma';
+import Result from '@utils/Result';
 
 export default class CategoriaDAO {
-	public static async insertCategory(data: Omit<Categoria, 'id'>): Promise<Result<any>> {
-		const { nombre, descripcion, tienda_id } = data;
-
-		const existingCategory = await db.oneOrNone(SQL_CATEGORIAS.isCategoryDuplicate, [nombre, descripcion, tienda_id]);
-
-		if (existingCategory?.exists) {
-			return Result.fail('La categoría ya existe');
-		}
-
+	public static async insertCategory(data: CategoriaCreate) {
 		try {
-			const result = await db.one(SQL_CATEGORIAS.createCategory, [nombre, descripcion, tienda_id]);
-			return Result.success(result);
+			const validatedData = CategoriaCreateSchema.parse(data);
+
+			const { nombre, descripcion, tienda_id } = validatedData;
+
+			const countCategories = await prisma.categorias.count({
+				where: {
+					nombre: { equals: nombre, mode: 'insensitive' },
+					descripcion: { equals: descripcion, mode: 'insensitive' },
+					tienda_id: tienda_id,
+				},
+			});
+
+			if (countCategories > 0) {
+				return Result.fail('La categoría ya existe');
+			}
+
+			const newCategory = await prisma.categorias.create({
+				data: {
+					nombre,
+					descripcion,
+					tienda_id,
+				},
+			});
+			return Result.success(newCategory);
 		} catch (error) {
 			return Result.fail(`No se puede crear la categoría, ${error}`);
 		}
 	}
 
-	public static async fetchCategories(tienda_id: string): Promise<Result<Categoria[]>> {
+	public static async fetchCategories(tienda_id: string) {
 		try {
-			const result: Categoria[] = await db.manyOrNone(SQL_CATEGORIAS.getCategoriesByStoreId, [tienda_id]);
-			return Result.success(result);
+			const categories = await prisma.categorias.findMany({
+				where: {
+					tienda_id,
+				},
+				select: {
+					id: true,
+					nombre: true,
+					descripcion: true,
+				}
+			})
+			return Result.success(categories);
 		} catch (error) {
 			return Result.fail(`No se puede obtener las categorías, ${error}`);
 		}
 	}
 
-	public static async filterCategoryIdByStore(tienda_id: string, id_categoria: string): Promise<Result<Categoria | null>> {
+	public static async filterCategoryIdByStore(tienda_id: string, id_categoria: string) {
 		try {
-			const result: Categoria | null = await db.oneOrNone(SQL_CATEGORIAS.getCategoriesByStoreAndId, [tienda_id, id_categoria]);
-			return Result.success(result);
+			const category = await prisma.categorias.findFirst({
+				where: {
+					id: id_categoria,
+					tienda_id: tienda_id,
+				},
+				select: {
+					id: true,
+					nombre: true,
+					descripcion: true,
+				},
+			});
+
+			if (!category) {
+				return Result.fail('No se encontró la categoría');
+			}
+
+			const productsResult = await ProductoDAO.fetchProducts(tienda_id, id_categoria);
+
+			if (!productsResult.isSuccess) {
+				return Result.fail(productsResult.getError());
+			}
+
+			const categoryWithProducts = {
+				...category,
+				productos: productsResult.getValue(),
+			};
+
+			return Result.success(categoryWithProducts);
 		} catch (error) {
 			return Result.fail(`No se puede obtener la categoría, ${error}`);
 		}
 	}
 
-	public static async updateCategory(fieldsToUpdate: Partial<Categoria>, tienda_id: string, id_categoria: string): Promise<Result<any>> {
+	public static async updateCategory(fieldsToUpdate: Partial<Categoria>, tienda_id: string, id_categoria: string) {
 		try {
-			const updates = Object.entries(fieldsToUpdate)
-				.map(([key, _], index) => `${key} = $${index + 1}`)
-				.join(', ');
-			const values = [...Object.values(fieldsToUpdate), id_categoria, tienda_id];
+			if (Object.keys(fieldsToUpdate).length === 0) {
+				return Result.fail('No hay campos para actualizar');
+			}
 
-			const sqlUpdate = `
-        UPDATE categorias
-        SET ${updates}
-        WHERE id = $${values.length - 1} AND tienda_id = $${values.length}
-        RETURNING *;
-      `;
+			const updatedCategory = await prisma.categorias.updateMany({
+				where: {
+					id: id_categoria,
+					tienda_id: tienda_id,
+				},
+				data: fieldsToUpdate,
+			});
 
-			const result = await db.one(sqlUpdate, values);
-			return Result.success(result);
+			if (updatedCategory.count === 0) {
+				return Result.fail('No se encontró la categoria para actualizar');
+			}
+
+			return Result.success();
 		} catch (error) {
 			return Result.fail(`No se puede actualizar la categoría, ${error}`);
 		}
 	}
 
-	public static async deleteCategory(tienda_id: string, id_categoria: string): Promise<Result<void>> {
+	public static async deleteCategory(tienda_id: string, id_categoria: string) {
 		try {
-			const result = await db.result(SQL_CATEGORIAS.deleteCategory, [id_categoria, tienda_id]);
+			const deleteResult = await prisma.$transaction(async (tx) => {
+				const products = await tx.productos.findMany({
+					where: {
+						categoria_id: id_categoria,
+						tienda_id: tienda_id,
+					},
+					select: { id: true },
+				});
 
-			if (result.rowCount > 0) {
+				const productIds = products.map((p) => p.id);
+
+				if (productIds.length > 0) {
+					await tx.historial_stock.deleteMany({
+						where: {
+							producto_id: { in: productIds },
+						},
+					});
+				}
+
+				await tx.productos.deleteMany({
+					where: {
+						categoria_id: id_categoria,
+						tienda_id: tienda_id,
+					},
+				});
+
+				return await tx.categorias.deleteMany({
+					where: {
+						id: id_categoria,
+						tienda_id: tienda_id,
+					},
+				});
+			});
+
+			if (deleteResult.count > 0) {
 				return Result.success();
 			} else {
-				return Result.fail('Categoría no encontrada');
+				return Result.fail('No se encontró la categoría para eliminar');
 			}
 		} catch (error) {
 			return Result.fail(`No se puede eliminar la categoría, ${error}`);

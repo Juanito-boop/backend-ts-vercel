@@ -1,8 +1,8 @@
 import Jwt from 'jsonwebtoken';
-import { secretJWT } from '../config/domain/varDB';
-import { Token } from '../interface/eschemas';
-import Result from '../utils/Result';
-import prisma from '../prisma';
+import { secretJWT } from '@config/domain/varDB';
+import { Token } from '@interface/eschemas';
+import Result from '@utils/Result';
+import prisma from '@src/prisma';
 
 export default class tokenDAO {
 	public static async generateToken(data: Token[]): Promise<Result<string>> {
@@ -36,7 +36,7 @@ export default class tokenDAO {
 					url,
 				},
 				secretKey,
-				{ expiresIn: '10000d' }
+				{ expiresIn: '10000d' },
 			);
 
 			return Result.success(token);

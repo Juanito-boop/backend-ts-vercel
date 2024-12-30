@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { Token } from '../interface/eschemas';
-import tokenDAO from '../dao/tokenDAO';
+import { Token } from '@interface/eschemas';
+import tokenDAO from '@dao/tokenDAO';
 
 class tokenController {
 	public async createToken(req: Request, res: Response): Promise<void> {

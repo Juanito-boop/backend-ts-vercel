@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { TiendaSchema } from '../interface/eschemas';
-import tiendaDAO from '../dao/tiendaDAO';
+import { TiendaSchema } from '@interface/eschemas';
+import tiendaDAO from '@dao/tiendaDAO';
 import { z } from 'zod';
 
 const TiendaCreateSchema = TiendaSchema.omit({ id: true });
@@ -38,10 +38,7 @@ class TiendaController {
 	}
 
 	public async fetchEmployeeCounterStores(req: Request, res: Response): Promise<void> {
-		const limit = parseInt(req.query.limit as string) || 50;
-		const offset = parseInt(req.query.offset as string) || 0;
-
-		const result = await tiendaDAO.fetchEmployeeCounterStores(limit, offset);
+		const result = await tiendaDAO.fetchEmployeeCounterStores();
 
 		if (result.isSuccess) {
 			res.status(200).json(result.getValue());

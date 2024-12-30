@@ -1,6 +1,6 @@
-import { ProductoCreate, productoCreateSchema, ProductosFetched, ProductoUpdate } from '../interface/eschemas';
-import prisma from '../prisma';
-import Result from '../utils/Result';
+import { ProductoCreate, productoCreateSchema, ProductosFetched, ProductoUpdate } from '@interface/eschemas';
+import prisma from '@src/prisma';
+import Result from '@utils/Result';
 
 export default class ProductoDAO {
 	public static async insertProduct(data: ProductoCreate) {
@@ -52,12 +52,15 @@ export default class ProductoDAO {
 		}
 	}
 
-	public static async fetchProducts(tienda_id: string) {
+	public static async fetchProducts(tienda_id: string, categoria_id?: string) {
 		try {
+			const whereClause: any = { tienda_id };
+			if (categoria_id) {
+				whereClause.categoria_id = categoria_id;
+			}
+
 			const products = await prisma.productos.findMany({
-				where: {
-					tienda_id,
-				},
+				where: whereClause,
 				select: {
 					id: true,
 					nombre: true,
@@ -92,7 +95,7 @@ export default class ProductoDAO {
 					marca: p.marca,
 					precio_unitario: p.precio_unitario.toNumber(),
 					descripcion: p.descripcion,
-					stock: p.historial_stock.map(stock => ({
+					stock: p.historial_stock.map((stock) => ({
 						cantidad: stock.cantidad,
 						fecha_hora: stock.fecha_hora.toISOString(),
 					})),
@@ -157,7 +160,7 @@ export default class ProductoDAO {
 				marca: product.marca,
 				precio_unitario: product.precio_unitario.toNumber(),
 				descripcion: product.descripcion,
-				stock: product.historial_stock.map(stock => ({
+				stock: product.historial_stock.map((stock) => ({
 					cantidad: stock.cantidad,
 					fecha_hora: stock.fecha_hora.toISOString(),
 				})),
@@ -205,17 +208,14 @@ export default class ProductoDAO {
 		try {
 			const countProducts = await prisma.productos.count({
 				where: { tienda_id: { equals: tienda_id } },
-			})
+			});
 			return Result.success(countProducts);
 		} catch (error) {
 			return Result.fail(`No se puede contar los productos, ${error}`);
 		}
 	}
 
-	public static async deleteProduct(
-		tienda_id: string,
-		id_producto: string
-	): Promise<Result<void>> {
+	public static async deleteProduct(tienda_id: string, id_producto: string): Promise<Result<void>> {
 		try {
 			const result = await prisma.$transaction(async (tx) => {
 				await tx.historial_stock.deleteMany({

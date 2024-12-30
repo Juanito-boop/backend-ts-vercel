@@ -1,47 +1,47 @@
 import { Request, Response } from 'express';
-import { ProductoSchema, ProductoUpdateSchema, productoCreateSchema } from '../interface/eschemas';
-import productoDAO from '../dao/productoDAO';
+import { ProductoUpdateSchema, productoCreateSchema } from '@interface/eschemas';
+import productoDAO from '@dao/productoDAO';
 import { z } from 'zod';
 
 class ProductoController {
 	public async createProduct(req: Request, res: Response): Promise<void> {
-    const parseResult = productoCreateSchema.safeParse(req.body);
+		const parseResult = productoCreateSchema.safeParse(req.body);
 
-    if (!parseResult.success) {
-        res.status(400).json({
-            Respuesta: 'Datos inválidos',
-            errors: parseResult.error.errors,
-        });
-        return;
-    }
+		if (!parseResult.success) {
+			res.status(400).json({
+				Respuesta: 'Datos inválidos',
+				errors: parseResult.error.errors,
+			});
+			return;
+		}
 
-    const data = parseResult.data;
+		const data = parseResult.data;
 
-    const result = await productoDAO.insertProduct(data);
+		const result = await productoDAO.insertProduct(data);
 
-    if (result.isSuccess) {
-        res.status(200).json(result.getValue());
-    } else {
-        res.status(400).json({ Respuesta: result.getError() });
-    }
-}
+		if (result.isSuccess) {
+			res.status(200).json(result.getValue());
+		} else {
+			res.status(400).json({ Respuesta: result.getError() });
+		}
+	}
 
 	public async fetchProducts(req: Request, res: Response): Promise<void> {
-    const tienda = req.params.idTienda;
+		const tienda = req.params.idTienda;
 
-    if (!z.string().uuid().safeParse(tienda).success) {
-      res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
-      return;
-    }
+		if (!z.string().uuid().safeParse(tienda).success) {
+			res.status(400).json({ Respuesta: 'El id de la tienda no es un UUID válido' });
+			return;
+		}
 
-    const result = await productoDAO.fetchProducts(tienda);
+		const result = await productoDAO.fetchProducts(tienda);
 
-    if (result.isSuccess) {
-      res.status(200).json(result.getValue());
-    } else {
-      res.status(400).json({ Respuesta: result.getError() });
-    }
-  }
+		if (result.isSuccess) {
+			res.status(200).json(result.getValue());
+		} else {
+			res.status(400).json({ Respuesta: result.getError() });
+		}
+	}
 
 	public async filterProductById(req: Request, res: Response): Promise<void> {
 		const tienda = req.params.idTienda;

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import TokenController from '../controllers/tokenController';
+import TokenController from '@controllers/tokenController';
 
 class TokenRuta {
 	public tokenRutaApi: Router;

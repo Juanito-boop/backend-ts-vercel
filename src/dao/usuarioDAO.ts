@@ -1,134 +1,150 @@
-import { db } from '../config/connection/conexion';
-import { Usuario, UsuarioSchema } from '../interface/eschemas';
-import { SQL_USUARIO } from '../repository/crudSQL';
-import Result from '../utils/Result';
-import { z } from 'zod';
-
-const UsuarioCreateSchema = UsuarioSchema.omit({ id: true });
-type UsuarioCreate = z.infer<typeof UsuarioCreateSchema>;
+import prisma from '@src/prisma';
+import { Usuario, UsuarioCreate } from '@interface/eschemas';
+import Result from '@utils/Result';
 
 export class UsuarioDAO {
-	public static async createUser(data: UsuarioCreate): Promise<Result<{ id: string }>> {
+	public static async createUser(data: UsuarioCreate): Promise<Result<{ id: string }>> {	
 		const { username, password, tienda_id, rol } = data;
-		const existingUser = await db.oneOrNone(SQL_USUARIO.existUserInStore, [username, tienda_id]);
 
-		if (existingUser?.exists) {
+		const existingUser = await prisma.usuarios.findFirst({
+			where: {
+				username: username,
+				tienda_id: tienda_id,
+			},
+			select: { id: true },
+		});
+
+		if (existingUser) {
 			return Result.fail('El usuario ya existe');
 		}
 
 		try {
-			const result = await db.task(async (consulta) => {
-				return await consulta.one<{ id: string }>(SQL_USUARIO.createUser, [username, password, tienda_id, rol]);
+			const newUser = await prisma.usuarios.create({
+				data: {
+					username,
+					password,
+					tienda_id,
+					rol,
+				},
+				select: { id: true },
 			});
 
-			return Result.success({ id: result.id });
+			return Result.success({ id: newUser.id });
 		} catch (error) {
 			return Result.fail(`No se puede crear el usuario, ${error}`);
 		}
 	}
 
-	public static async createUsers(data: UsuarioCreate[]): Promise<Result<{ created: { id: string }[]; errors: string[] }>> {
-		const created: { id: string }[] = [];
-		const errors: string[] = [];
-
-		for (const user of data) {
-			const { username, password, tienda_id, rol } = user;
-			const existingUser = await db.oneOrNone(SQL_USUARIO.existUserInStore, [username, tienda_id]);
-
-			if (existingUser) {
-				errors.push(`El usuario ${username} ya existe en la tienda ${tienda_id}`);
-				continue;
-			}
-
-			try {
-				const result = await db.task(async (consulta) => {
-					return await consulta.one<{ id: string }>(SQL_USUARIO.createUser, [username, password, tienda_id, rol]);
-				});
-				created.push({ id: result.id });
-			} catch (error) {
-				errors.push(`No se puede crear el usuario ${username}, ${error}`);
-			}
-		}
-		return Result.success({ created, errors });
-	}
-
-	public static async fetchUsers(tienda_id: string): Promise<Result<Usuario[]>> {
+	public static async fetchUsers(tienda_id: string) {
 		try {
-			const result: Usuario[] = await db.manyOrNone(SQL_USUARIO.getUserList, [tienda_id]);
-			return Result.success(result);
+			const users = await prisma.usuarios.findMany({
+				where: { tienda_id },
+				select: {
+					id: true,
+					username: true,
+					rol: true,
+					tienda_id: true,
+					password: false,
+				},
+			});
+
+			const resultUsers = users.map((u) => ({
+				...u
+			})) as Usuario[];
+
+			return Result.success(resultUsers);
 		} catch (error) {
 			return Result.fail(`No se puede obtener los usuarios, ${error}`);
 		}
 	}
 
-	public static async finAllUsers(): Promise<Result<Omit<Usuario, 'password'>[]>> {
+	public static async filterUserByStoreAndId(tienda_id: string, id: string) {
 		try {
-			const result: Omit<Usuario, 'password'>[] = await db.manyOrNone(SQL_USUARIO.getAllUsersWithStore);
-			return Result.success(result);
-		} catch (error) {
-			return Result.fail(`No se puede obtener los usuarios, ${error}`);
-		}
-	}
+			// 1) Buscar el usuario
+			const user = await prisma.usuarios.findFirst({
+				where: {
+					id,
+					tienda_id,
+				},
+				select: {
+					id: true,
+					username: true,
+					rol: true,
+					tienda_id: false,
+					password: false,
+				}
+			});
 
-	public static async filterUserByStoreAndId(tienda_id: string, id: string): Promise<Result<Usuario | null>> {
-		try {
-			const result: Usuario | null = await db.oneOrNone(SQL_USUARIO.findUserByStoreAndId, [id, tienda_id]);
-			return Result.success(result);
+			return Result.success(user);
 		} catch (error) {
 			return Result.fail(`No se puede obtener el usuario, ${error}`);
 		}
 	}
 
-	public static async updateUser(
-  fieldsToUpdate: { [key: string]: any },
-  id: string,
-  tienda_id: string
-): Promise<Result<void>> {
-  if (Object.keys(fieldsToUpdate).length === 0) {
-    return Result.fail('No se proporcionaron campos para actualizar');
-  }
+	public static async updateUser(fieldsToUpdate: { [key: string]: any }, id: string, tienda_id: string) {
+		if (Object.keys(fieldsToUpdate).length === 0) {
+			return Result.fail('No se proporcionaron campos para actualizar');
+		}
 
-  const existingUser = await db.oneOrNone(SQL_USUARIO.findUserByStoreAndId, [id, tienda_id]);
+		const existingUser = await prisma.usuarios.findFirst({
+			where: { id, tienda_id },
+		});
 
-  if (!existingUser) {
-    return Result.fail('Usuario no encontrado');
-  }
+		if (!existingUser) {
+			return Result.fail('Usuario no encontrado');
+		}
 
-  try {
-    // Filtrar campos vacíos o no deseados
-    const filteredFieldsToUpdate = Object.fromEntries(
-      Object.entries(fieldsToUpdate).filter(([_, value]) => value !== undefined && value !== "")
-    );
+		try {
+			const filteredFieldsToUpdate = Object.fromEntries(
+				Object.entries(fieldsToUpdate).filter(([_, value]) => value !== undefined && value !== '')
+			);
 
-    if (Object.keys(filteredFieldsToUpdate).length === 0) {
-      return Result.fail('No se proporcionaron campos válidos para actualizar');
-    }
+			if (Object.keys(filteredFieldsToUpdate).length === 0) {
+				return Result.fail('No se proporcionaron campos válidos para actualizar');
+			}
 
-    const setClause = Object.keys(filteredFieldsToUpdate)
-      .map((field, index) => `${field} = $${index + 1}`)
-      .join(', ');
+			const updateResult = await prisma.usuarios.updateMany({
+				where: {
+					id,
+					tienda_id,
+				},
+				data: filteredFieldsToUpdate,
+			});
 
-    const values = Object.values(filteredFieldsToUpdate);
-    values.push(id, tienda_id);
+			if (updateResult.count === 0) {
+				return Result.fail('No se actualizó ningún usuario');
+			}
 
-    const sqlUpdate = `UPDATE usuarios SET ${setClause} WHERE id = $${values.length - 1} AND tienda_id = $${values.length}`;
-
-    await db.query(sqlUpdate, values);
-    return Result.success();
-  } catch (error) {
-    return Result.fail(`No se puede actualizar el usuario, ${error}`);
-  }
-}
+			return Result.success();
+		} catch (error) {
+			return Result.fail(`No se puede actualizar el usuario, ${error}`);
+		}
+	}
 
 	public static async deleteUser(tienda_id: string, id: string) {
-		const existingUser = await db.oneOrNone(SQL_USUARIO.findUserByStoreAndId, [id, tienda_id]);
+		const existingUser = await prisma.usuarios.findFirst({
+			where: {
+				id,
+				tienda_id,
+			},
+		});
 
 		if (!existingUser) {
 			return Result.fail('Usuario no encontrado en la tienda especificada.');
 		}
 
 		try {
-			await db.query(SQL_USUARIO.deleteUser, [id, tienda_id]);
+			const deleteResult = await prisma.usuarios.deleteMany({
+				where: {
+					id,
+					tienda_id,
+				},
+			});
+
+			if (deleteResult.count === 0) {
+				return Result.fail('No se pudo eliminar el usuario, no existe.');
+			}
+
 			return Result.success();
 		} catch (error: any) {
 			const errorMessage = error?.message ? error.message : 'Error desconocido.';
