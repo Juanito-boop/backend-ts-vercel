@@ -1,8 +1,8 @@
 import Jwt from 'jsonwebtoken';
-import { secretJWT } from '@config/domain/varDB';
-import { Token } from '@interface/eschemas';
-import Result from '@utils/Result';
-import prisma from '@src/prisma';
+import { secretJWT } from '../config/domain/varDB';
+import { Token } from '../interface/eschemas';
+import Result from '../utils/Result';
+import prisma from '../prisma';
 
 export default class tokenDAO {
 	public static async generateToken(data: Token[]): Promise<Result<string>> {

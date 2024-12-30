@@ -3,16 +3,16 @@ import express from 'express';
 import morgan from 'morgan';
 import portfinder from 'portfinder';
 
-import { serverPort } from '@config/domain/varDB';
+import { serverPort } from './config/domain/varDB';
 
-import seguridad from '@middleware/Seguridad';
+import seguridad from './middleware/Seguridad';
 
-import rutasCategorias from '@routes/rutasCategorias';
-import rutasProductos from '@routes/rutasProductos';
-import rutasTienda from '@routes/rutasTienda';
-import rutasUsuario from '@routes/rutasUsuario';
-import rutasStock from '@routes/rutasStock';
-import tokenRuta from '@routes/TokenRuta';
+import rutasCategorias from './routes/rutasCategorias';
+import rutasProductos from './routes/rutasProductos';
+import rutasTienda from './routes/rutasTienda';
+import rutasUsuario from './routes/rutasUsuario';
+import rutasStock from './routes/rutasStock';
+import tokenRuta from './routes/TokenRuta';
 
 export class application {
 	public app: express.Application;

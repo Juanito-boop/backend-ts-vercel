@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { ProductoUpdateSchema, productoCreateSchema } from '@interface/eschemas';
-import productoDAO from '@dao/productoDAO';
+import { ProductoUpdateSchema, productoCreateSchema } from '../interface/eschemas';
+import productoDAO from '../dao/productoDAO';
 import { z } from 'zod';
 
 class ProductoController {

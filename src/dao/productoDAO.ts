@@ -1,6 +1,6 @@
-import { ProductoCreate, productoCreateSchema, ProductosFetched, ProductoUpdate } from '@interface/eschemas';
-import prisma from '@src/prisma';
-import Result from '@utils/Result';
+import { ProductoCreate, productoCreateSchema, ProductosFetched, ProductoUpdate } from '../interface/eschemas';
+import prisma from '../prisma';
+import Result from '../utils/Result';
 
 export default class ProductoDAO {
 	public static async insertProduct(data: ProductoCreate) {

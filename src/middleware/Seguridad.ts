@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import { secretJWT } from '@config/domain/varDB';
+import { secretJWT } from '../config/domain/varDB';
 
 class Seguridad {
 	public revisar(req: Request, res: Response, next: NextFunction) {

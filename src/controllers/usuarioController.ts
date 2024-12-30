@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { UsuarioDAO } from '@dao/usuarioDAO';
-import { Usuario, UsuarioSchema } from '@interface/eschemas';
-import Result from '@utils/Result';
+import { UsuarioDAO } from '../dao/usuarioDAO';
+import { Usuario, UsuarioSchema } from '../interface/eschemas';
+import Result from '../utils/Result';
 
 const UsuarioCreateSchema = UsuarioSchema.omit({ id: true });
 

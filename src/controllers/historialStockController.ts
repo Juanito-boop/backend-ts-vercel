@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import historialStockDAO from '@dao/historialStockDAO';
+import historialStockDAO from '../dao/historialStockDAO';
 import { z } from 'zod';
 
 export default class HistorialStockController {

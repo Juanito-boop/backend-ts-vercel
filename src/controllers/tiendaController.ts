@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { TiendaSchema } from '@interface/eschemas';
-import tiendaDAO from '@dao/tiendaDAO';
+import { TiendaSchema } from '../interface/eschemas';
+import tiendaDAO from '../dao/tiendaDAO';
 import { z } from 'zod';
 
 const TiendaCreateSchema = TiendaSchema.omit({ id: true });

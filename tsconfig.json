@@ -9,17 +9,6 @@
 		"sourceMap": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"baseUrl": ".",
-		"paths": {
-			"@src/*": ["src/*"],
-			"@dao/*": ["src/dao/*"],
-			"@controllers/*": ["src/controllers/*"],
-			"@routes/*": ["src/routes/*"],
-			"@utils/*": ["src/utils/*"],
-			"@config/*": ["src/config/*"],
-			"@interface/*": ["src/interface/*"],
-			"@middleware/*": ["src/middleware/*"],
-		}
 	},
 	"include": ["src/**/*", "api/index.ts"],
 	"exclude": ["node_modules"]

@@ -1,6 +1,6 @@
-import prisma from '@src/prisma';
-import { Tienda, TiendaCreate } from '@interface/eschemas';
-import Result from '@utils/Result';
+import prisma from '../prisma';
+import { Tienda, TiendaCreate } from '../interface/eschemas';
+import Result from '../utils/Result';
 
 export default class TiendaDAO {
 	public static async addNewStore(data: TiendaCreate): Promise<Result<{ id: string }>> {

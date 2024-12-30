@@ -1,7 +1,7 @@
-import { Categoria, CategoriaCreate, CategoriaCreateSchema } from '@interface/eschemas';
-import ProductoDAO from '@dao/productoDAO';
-import prisma from '@src/prisma';
-import Result from '@utils/Result';
+import { Categoria, CategoriaCreate, CategoriaCreateSchema } from '../interface/eschemas';
+import ProductoDAO from '../dao/productoDAO';
+import prisma from '../prisma';
+import Result from '../utils/Result';
 
 export default class CategoriaDAO {
 	public static async insertCategory(data: CategoriaCreate) {

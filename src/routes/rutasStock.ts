@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import HistorialStockController from '@controllers/historialStockController';
+import HistorialStockController from '../controllers/historialStockController';
 
 class rutasHistorialStock {
 	public rutasApi: Router;

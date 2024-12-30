@@ -1,6 +1,6 @@
-import prisma from '@src/prisma';
-import { Usuario, UsuarioCreate } from '@interface/eschemas';
-import Result from '@utils/Result';
+import prisma from '../prisma';
+import { Usuario, UsuarioCreate } from '../interface/eschemas';
+import Result from '../utils/Result';
 
 export class UsuarioDAO {
 	public static async createUser(data: UsuarioCreate): Promise<Result<{ id: string }>> {	

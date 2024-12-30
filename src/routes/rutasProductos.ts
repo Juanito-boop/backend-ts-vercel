@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import ProductoController from '@controllers/productoController';
+import ProductoController from '../controllers/productoController';
 
 class RutasProductos {
 	public rutasApi: Router;
